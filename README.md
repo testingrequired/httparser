@@ -12,15 +12,14 @@ Works with `no_std`, simply disable the `std` Cargo feature.
 
 [Changelog](https://github.com/seanmonstar/httparse/releases)
 
-
 [discord-badge]: https://img.shields.io/discord/500028886025895936.svg?logo=discord
 [discord-url]: https://discord.gg/kkwpueZ
 
 ## Usage
 
 ```rust
-let mut headers = [httparse::EMPTY_HEADER; 64];
-let mut req = httparse::Request::new(&mut headers);
+let mut headers = [httparser::EMPTY_HEADER; 64];
+let mut req = httparser::Request::new(&mut headers);
 
 let buf = b"GET /index.html HTTP/1.1\r\nHost";
 assert!(req.parse(buf)?.is_partial());
