@@ -655,7 +655,7 @@ impl<'h, 'b> Response<'h, 'b> {
         if config.allow_multiple_spaces_in_response_status_delimiters {
             complete!(skip_spaces(&mut bytes));
         }
-        self.code = Some(complete!(parse_code(&mut bytes)));
+        self.code = Some(complete!(parse_status_code(&mut bytes)));
 
         // RFC7230 says there must be 'SP' and then reason-phrase, but admits
         // its only for legacy reasons. With the reason-phrase completely
@@ -917,15 +917,34 @@ pub fn parse_uri<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
     }
 }
 
+/// Parse a response status code from a byte slice.
 #[inline]
-fn parse_code(bytes: &mut Bytes<'_>) -> Result<u16> {
-    let hundreds = expect!(bytes.next() == b'0'..=b'9' => Err(Error::Status));
-    let tens = expect!(bytes.next() == b'0'..=b'9' => Err(Error::Status));
-    let ones = expect!(bytes.next() == b'0'..=b'9' => Err(Error::Status));
+fn parse_status_code(bytes: &mut Bytes<'_>) -> Result<u16> {
+    // Extract the hundreds place X00
+    let hundreds = {
+        let hundreds = expect!(bytes.next() == b'0'..=b'9' => Err(Error::Status));
+        let hundreds = (hundreds - b'0') as u16;
+        hundreds * 100
+    };
 
-    Ok(Status::Complete(
-        (hundreds - b'0') as u16 * 100 + (tens - b'0') as u16 * 10 + (ones - b'0') as u16,
-    ))
+    // Extract the tens place 0X0
+    let tens = {
+        let tens = expect!(bytes.next() == b'0'..=b'9' => Err(Error::Status));
+        let tens = (tens - b'0') as u16;
+        tens * 10
+    };
+
+    // Extract the ones place 00X
+    let ones = {
+        let ones = expect!(bytes.next() == b'0'..=b'9' => Err(Error::Status));
+        let ones = (ones - b'0') as u16;
+        ones
+    };
+
+    // Calculate the status code
+    let status_code = hundreds + tens + ones;
+
+    Ok(Status::Complete(status_code))
 }
 
 /// Parse a buffer of bytes as headers.
