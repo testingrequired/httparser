@@ -1,4 +1,4 @@
-# httparse
+# httparser
 
 [![crates.io](https://img.shields.io/crates/v/httparse.svg)](https://crates.io/crates/httparse)
 [![Released API docs](https://docs.rs/httparse/badge.svg)](https://docs.rs/httparse)
@@ -34,7 +34,6 @@ assert!(req.parse(buf)?.is_complete());
 
 Licensed under either of
 
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or https://apache.org/licenses/LICENSE-2.0)
 - MIT license ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
 
 ### Contribution
