@@ -520,8 +520,11 @@ impl<'h, 'b> Request<'h, 'b> {
         self.parse_with_config_and_uninit_headers(buf, &Default::default(), headers)
     }
 
+    /// Configure and try to parse a buffer of bytes into the Request.
+    ///
+    /// Returns byte offset in `buf` to start of HTTP body.
     #[tracing::instrument(skip_all)]
-    fn parse_with_config(&mut self, buf: &'b [u8], config: &ParserConfig) -> Result<usize> {
+    pub fn parse_with_config(&mut self, buf: &'b [u8], config: &ParserConfig) -> Result<usize> {
         let headers = mem::take(&mut self.headers);
 
         /* SAFETY: see `parse_headers_iter_uninit` guarantees */
