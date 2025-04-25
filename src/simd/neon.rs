@@ -52,7 +52,7 @@ pub fn match_uri_vectored(bytes: &mut Bytes) {
 const fn bit_set(x: u8) -> bool {
     // Validates if a byte is a valid header name character
     // https://tools.ietf.org/html/rfc7230#section-3.2.6
-    matches!(x, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'-' | b'.' | b'^' | b'_' | b'`' | b'|' | b'~')
+    matches!(x, b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' | b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' | b'*' | b'+' | b'-' | b'.' | b'^' | b'_' | b'`' | b'|' | b'~' | b'{' | b'}')
 }
 
 // A 256-bit bitmap, split into two halves

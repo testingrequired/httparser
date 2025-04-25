@@ -79,7 +79,7 @@ pub(crate) fn is_uri_token(b: u8) -> bool {
 static TOKEN_MAP: [bool; 256] = byte_map!(
     b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' |
     b'!' | b'#' | b'$' | b'%' | b'&' | b'\'' |  b'*' | b'+' |
-    b'-' | b'.' | b'^' | b'_' | b'`' | b'|' | b'~'
+    b'-' | b'.' | b'^' | b'_' | b'`' | b'|' | b'~' | b'{' | b'}'
 );
 
 #[inline]
@@ -1449,6 +1449,57 @@ mod tests {
             assert_eq!(req.headers[0].value, b"foo.com");
             assert_eq!(req.headers[1].name, "Cookie");
             assert_eq!(req.headers[1].value, b"");
+        }
+    }
+
+    req! {
+        test_request_headers_templated_key,
+        b"GET / HTTP/1.1\r\nHost: foo.com\r\nCookie: \r\n{{key}}: value\r\n\r\n",
+        |req| {
+            assert_eq!(req.method.unwrap(), "GET");
+            assert_eq!(req.path.unwrap(), "/");
+            assert_eq!(req.version.unwrap(), 1);
+            assert_eq!(req.headers.len(), 3);
+            assert_eq!(req.headers[0].name, "Host");
+            assert_eq!(req.headers[0].value, b"foo.com");
+            assert_eq!(req.headers[1].name, "Cookie");
+            assert_eq!(req.headers[1].value, b"");
+            assert_eq!(req.headers[2].name, "{{key}}");
+            assert_eq!(req.headers[2].value, b"value");
+        }
+    }
+
+    req! {
+        test_request_headers_templated_key_optional_whitespace,
+        b"GET / HTTP/1.1\r\nHost: foo.com\r\nCookie: \r\n{{key}}:  \t \r\n\r\n",
+        |req| {
+            assert_eq!(req.method.unwrap(), "GET");
+            assert_eq!(req.path.unwrap(), "/");
+            assert_eq!(req.version.unwrap(), 1);
+            assert_eq!(req.headers.len(), 3);
+            assert_eq!(req.headers[0].name, "Host");
+            assert_eq!(req.headers[0].value, b"foo.com");
+            assert_eq!(req.headers[1].name, "Cookie");
+            assert_eq!(req.headers[1].value, b"");
+            assert_eq!(req.headers[2].name, "{{key}}");
+            assert_eq!(req.headers[2].value, b"");
+        }
+    }
+
+    req! {
+        test_request_headers_templated_key_and_value,
+        b"GET / HTTP/1.1\r\nHost: foo.com\r\nCookie: \r\n{{key}}: {{value}}\r\n\r\n",
+        |req| {
+            assert_eq!(req.method.unwrap(), "GET");
+            assert_eq!(req.path.unwrap(), "/");
+            assert_eq!(req.version.unwrap(), 1);
+            assert_eq!(req.headers.len(), 3);
+            assert_eq!(req.headers[0].name, "Host");
+            assert_eq!(req.headers[0].value, b"foo.com");
+            assert_eq!(req.headers[1].name, "Cookie");
+            assert_eq!(req.headers[1].value, b"");
+            assert_eq!(req.headers[2].name, "{{key}}");
+            assert_eq!(req.headers[2].value, b"{{value}}");
         }
     }
 
