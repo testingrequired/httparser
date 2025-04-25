@@ -956,8 +956,7 @@ fn parse_status_code(bytes: &mut Bytes<'_>) -> Result<u16> {
     // Extract the ones place 00X
     let ones = {
         let ones = expect!(bytes.next() == b'0'..=b'9' => Err(Error::Status));
-        let ones = (ones - b'0') as u16;
-        ones
+        (ones - b'0') as u16
     };
 
     // Calculate the status code
