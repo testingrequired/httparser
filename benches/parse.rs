@@ -259,7 +259,7 @@ fn many_requests(c: &mut Criterion) {
         ("w3!r`d", 20),
     ]
     .iter()
-    .flat_map(|&(method, count)| std::iter::repeat(method).take(count))
+    .flat_map(|&(method, count)| std::iter::repeat_n(method, count))
     .map(|method| format!("{method} / HTTP/1.1\r\n\r\n"))
     .collect::<Vec<_>>();
     SliceRandom::shuffle(&mut *requests, &mut StdRng::seed_from_u64(0));
