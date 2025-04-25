@@ -81,6 +81,7 @@ const BITMAPS: ([u8; 16], [u8; 16]) = build_bitmap();
 
 // NOTE: adapted from 256-bit version, with upper 128-bit ops commented out
 #[inline]
+#[tracing::instrument]
 unsafe fn match_header_name_char_16_neon(ptr: *const u8) -> usize {
     let bitmaps = BITMAPS;
     // NOTE: ideally compile-time constants

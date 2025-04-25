@@ -21,9 +21,14 @@ build = "build.rs"
 default = ["std"]
 std = []
 
+[dependencies]
+log = "0.4.27"
+tracing = { version = "0.1", features = ["log"] }
+
 [dev-dependencies]
 criterion = "0.3.5"
 rand = "0.8.5"
+env_logger = "0.11.8"
 
 [lib]
 bench = false

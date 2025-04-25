@@ -468,6 +468,7 @@ impl<'h, 'b> Request<'h, 'b> {
         }
     }
 
+    #[tracing::instrument(skip_all)]
     fn parse_with_config_and_uninit_headers(
         &mut self,
         buf: &'b [u8],
@@ -510,6 +511,7 @@ impl<'h, 'b> Request<'h, 'b> {
     /// except use an uninitialized slice of `Header`s.
     ///
     /// For more information, see `parse`
+    #[tracing::instrument(skip_all)]
     pub fn parse_with_uninit_headers(
         &mut self,
         buf: &'b [u8],
@@ -518,6 +520,7 @@ impl<'h, 'b> Request<'h, 'b> {
         self.parse_with_config_and_uninit_headers(buf, &Default::default(), headers)
     }
 
+    #[tracing::instrument(skip_all)]
     fn parse_with_config(&mut self, buf: &'b [u8], config: &ParserConfig) -> Result<usize> {
         let headers = mem::take(&mut self.headers);
 
@@ -539,12 +542,15 @@ impl<'h, 'b> Request<'h, 'b> {
     /// Try to parse a buffer of bytes into the Request.
     ///
     /// Returns byte offset in `buf` to start of HTTP body.
+    #[tracing::instrument(skip_all)]
     pub fn parse(&mut self, buf: &'b [u8]) -> Result<usize> {
+        log::info!("Parsing!");
         self.parse_with_config(buf, &Default::default())
     }
 }
 
 #[inline]
+#[tracing::instrument(skip_all)]
 fn skip_empty_lines(bytes: &mut Bytes<'_>) -> Result<()> {
     loop {
         let b = bytes.peek();
@@ -570,6 +576,7 @@ fn skip_empty_lines(bytes: &mut Bytes<'_>) -> Result<()> {
 }
 
 #[inline]
+#[tracing::instrument(skip_all)]
 fn skip_spaces(bytes: &mut Bytes<'_>) -> Result<()> {
     loop {
         let b = bytes.peek();
@@ -747,9 +754,12 @@ pub const EMPTY_HEADER: Header<'static> = Header {
 #[inline]
 #[doc(hidden)]
 #[allow(missing_docs)]
+#[tracing::instrument(skip_all)]
 // WARNING: Exported for internal benchmarks, not fit for public consumption
 pub fn parse_version(bytes: &mut Bytes) -> Result<u8> {
     if let Some(eight) = bytes.peek_n::<[u8; 8]>(8) {
+        tracing::debug!("Skipping past HTTP version string e.g. HTTP/1.1");
+
         const H10: u64 = u64::from_ne_bytes(*b"HTTP/1.0");
         const H11: u64 = u64::from_ne_bytes(*b"HTTP/1.1");
         // SAFETY: peek_n(8) before ensure within bounds
@@ -780,6 +790,7 @@ pub fn parse_version(bytes: &mut Bytes) -> Result<u8> {
 #[inline]
 #[doc(hidden)]
 #[allow(missing_docs)]
+#[tracing::instrument(skip_all)]
 // WARNING: Exported for internal benchmarks, not fit for public consumption
 pub fn parse_method<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
     const GET: [u8; 4] = *b"GET ";
@@ -788,6 +799,8 @@ pub fn parse_method<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
         Some(GET) => {
             // SAFETY: we matched "GET " which has 4 bytes and is ASCII
             let method = unsafe {
+                tracing::debug!("Skipping past HTTP method characters 'GET '");
+
                 bytes.advance(4); // advance cursor past "GET "
                 str::from_utf8_unchecked(bytes.slice_skip(1)) // "GET" without space
             };
@@ -824,6 +837,7 @@ pub fn parse_method<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
 /// > Non-US-ASCII content in header fields and the reason phrase
 /// > has been obsoleted and made opaque (the TEXT rule was removed).
 #[inline]
+#[tracing::instrument(skip_all)]
 fn parse_reason<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
     let mut seen_obs_text = false;
     loop {
@@ -872,6 +886,7 @@ fn parse_reason<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
 }
 
 #[inline]
+#[tracing::instrument(skip_all)]
 fn parse_token<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
     let b = next!(bytes);
     if !is_method_token(b) {
@@ -895,6 +910,7 @@ fn parse_token<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
 #[inline]
 #[doc(hidden)]
 #[allow(missing_docs)]
+#[tracing::instrument(skip_all)]
 // WARNING: Exported for internal benchmarks, not fit for public consumption
 pub fn parse_uri<'a>(bytes: &mut Bytes<'a>) -> Result<&'a str> {
     let start = bytes.pos();
@@ -965,6 +981,7 @@ fn parse_status_code(bytes: &mut Bytes<'_>) -> Result<u16> {
 ///                httparser::Header { name: "Accept", value: b"*/*" }
 ///            ][..]))));
 /// ```
+#[tracing::instrument(skip_all)]
 pub fn parse_headers<'b: 'h, 'h>(
     src: &'b [u8],
     mut dst: &'h mut [Header<'b>],
@@ -979,6 +996,7 @@ pub fn parse_headers<'b: 'h, 'h>(
 }
 
 #[inline]
+#[tracing::instrument(skip_all)]
 fn parse_headers_iter<'a>(
     headers: &mut &mut [Header<'a>],
     bytes: &mut Bytes<'a>,
@@ -1020,6 +1038,7 @@ struct HeaderParserConfig {
  * Also it promises `headers` get shrunk to number of initialized headers,
  * so casting the other way around after calling this function is safe
  */
+#[tracing::instrument(skip_all)]
 fn parse_headers_iter_uninit<'a>(
     headers: &mut &mut [MaybeUninit<Header<'a>>],
     bytes: &mut Bytes<'a>,
@@ -1125,6 +1144,13 @@ fn parse_headers_iter_uninit<'a>(
             result = Ok(Status::Complete(end - start));
             break;
         }
+
+        log::debug!(
+            "Handling char: {} @ {:?}",
+            char::from_u32(b.into()).unwrap(),
+            bytes.pos()
+        );
+
         if !is_header_name_token(b) {
             if config.allow_space_before_first_header_name
                 && autoshrink.num_headers == 0
@@ -1141,6 +1167,11 @@ fn parse_headers_iter_uninit<'a>(
                 bytes.slice();
                 continue 'headers;
             } else {
+                log::error!(
+                    "Handling invalid header name! char: {} @ {:?}",
+                    char::from_u32(b.into()).unwrap(),
+                    bytes.pos()
+                );
                 handle_invalid_char!(bytes, b, HeaderName);
             }
         }
@@ -1158,6 +1189,7 @@ fn parse_headers_iter_uninit<'a>(
             let name = unsafe { str::from_utf8_unchecked(bslice) };
 
             if b == b':' {
+                log::debug!("Header name found: {}", name);
                 break 'name name;
             }
 
@@ -1270,6 +1302,7 @@ fn parse_headers_iter_uninit<'a>(
 /// assert_eq!(httparser::parse_chunk_size(buf),
 ///            Ok(httparser::Status::Complete((3, 4))));
 /// ```
+#[tracing::instrument(skip_all)]
 pub fn parse_chunk_size(buf: &[u8]) -> result::Result<Status<(usize, u64)>, InvalidChunkSize> {
     const RADIX: u64 = 16;
     let mut bytes = Bytes::new(buf);

@@ -54,12 +54,21 @@ macro_rules! space {
 
 macro_rules! newline {
     ($bytes:ident) => ({
+        log::debug!(
+            "Skipping newline for \\r"
+        );
         match next!($bytes) {
             b'\r' => {
+                log::debug!(
+                    "Skipping newline for \\n"
+                );
                 expect!($bytes.next() == b'\n' => Err(Error::NewLine));
                 $bytes.slice();
             },
             b'\n' => {
+                log::debug!(
+                    "Skipping newlines for \\n"
+                );
                 $bytes.slice();
             },
             _ => return Err(Error::NewLine)

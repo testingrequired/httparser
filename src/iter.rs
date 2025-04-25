@@ -87,6 +87,8 @@ impl<'a> Bytes<'a> {
     /// Caller must ensure that Bytes hasn't been advanced/bumped by more than [`Bytes::len()`].
     #[inline]
     pub unsafe fn advance(&mut self, n: usize) {
+        log::debug!("Advancing by {}", n);
+
         self.cursor = self.cursor.add(n);
         debug_assert!(self.cursor <= self.end, "overflow");
     }
@@ -103,6 +105,7 @@ impl<'a> Bytes<'a> {
 
     #[inline]
     pub fn slice(&mut self) -> &'a [u8] {
+        log::debug!("Slicing bytes");
         // SAFETY: not moving position at all, so it's safe
         let slice = unsafe { slice_from_ptr_range(self.start, self.cursor) };
         self.commit();
@@ -125,6 +128,11 @@ impl<'a> Bytes<'a> {
 
     #[inline]
     pub fn commit(&mut self) {
+        log::debug!(
+            "Committing! start: {:?}, cursor: {:?}",
+            self.start,
+            self.cursor
+        );
         self.start = self.cursor
     }
 
@@ -157,6 +165,8 @@ impl<'a> Bytes<'a> {
     /// Must ensure invariant `bytes.start() <= ptr && ptr <= bytes.end()`.
     #[inline]
     pub unsafe fn set_cursor(&mut self, ptr: *const u8) {
+        log::info!("Set cursor! {:?}", ptr);
+
         debug_assert!(ptr >= self.start);
         debug_assert!(ptr <= self.end);
         self.cursor = ptr;
